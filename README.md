@@ -143,3 +143,7 @@ Its constructor sets both simulated areas to the supplied initial temperature an
 |------|---------|-------------|---------------|---------------|
 | 0    | HEATER0 | THERMISTOR0 | +1 per tick() | -1 per tick() |
 | 1    | HEATER1 | THERMISTOR1 | +2 per tick() | -2 per tick() |
+
+## Block Diagram
+
+![FSW Block Diagram](docs/fsw.png)
