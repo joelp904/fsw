@@ -3,46 +3,25 @@
 #include <cstdint>
 #include <cstring>
 #include <cmath>
+#include <sstream>
+#include <iomanip>
 
 #include "temperature_monitor.hpp"
 
 namespace
 {
-// TODO: Understand why we use this over static_int32t<>
-// Represents temperature (double) -> reg val 'raw' (uint32_t) conversion
 uint32_t encode_temp(double temp)
 {
     const int32_t millidegrees = static_cast<int32_t>(std::lround((temp * 1000.0)));
-
-    uint32_t raw;
-    std::memcpy(&raw, &millidegrees, sizeof(raw));
-    return raw;
+    return static_cast<uint32_t>(millidegrees);
 }
 
-// Represents reg val 'raw' (uint32_t) -> temperature (int32_t) conversion
 double decode_temp(uint32_t raw)
 {
-    int32_t convert;
-    std::memcpy(&convert, &raw, sizeof(convert));
-    return convert / 1000.0;
+    const int32_t millidegrees = static_cast<int32_t>(raw);
+    return millidegrees / 1000.0;
 }
 
-//// TODO: Understand why we use this over static_int32t<>
-//// Represents temperature (int32_t) -> reg val 'raw' (uint32_t) conversion
-//uint32_t encode_temp(int32_t value)
-//{
-//    uint32_t raw;
-//    std::memcpy(&raw, &value, sizeof(raw));
-//    return raw;
-//}
-
-//// Represents reg val 'raw' (uint32_t) -> temperature (int32_t) conversion
-//int32_t decode_temp(uint32_t raw)
-//{
-//    int32_t value;
-//    std::memcpy(&value, &raw, sizeof(value));
-//    return value;
-//}
 } // end namespace
 
 Temperature_monitor::Temperature_monitor(Temp_unit unit)
@@ -121,15 +100,20 @@ double Temperature_monitor::get_temp(Thermistor_num thermistor) const
 
 std::string Temperature_monitor::report_temps() const
 {
-    std::string report;
     Thermistor_temps temps;
     temps.thermistor0 = get_temp(THERMISTOR0);
     temps.thermistor1 = get_temp(THERMISTOR1);
 
-    report =  "THERMISTOR0 Temp: '" + std::to_string(temps.thermistor0) + "' " +
-              "THERMISTOR1 Temp: '" + std::to_string(temps.thermistor1) + "' ";
 
-    return report;
+    std::string symbol = (unit_ == CELSIUS) ? "°C" : "°F";
+
+    std::ostringstream report;
+
+    report << std::fixed << std::setprecision(2)
+           << "THERMISTOR0 Temp: '" << temps.thermistor0 << " " << symbol << "' "
+           << "THERMISTOR1 Temp: '" << temps.thermistor1 << " " << symbol << "' ";
+
+    return report.str();
 }
 
 void Temperature_monitor::set_min_temp_limit(Thermistor_num thermistor, double temp)
@@ -182,12 +166,12 @@ void Temperature_monitor::validate_write_reg(uint32_t address, uint32_t raw_valu
 {
     const double value = decode_temp(raw_value);
 
-    // Validate MIN_LIMIT write
+    // Validate MIN Value !> set MAX Value
     if (address == TEMP0_MIN_LIMIT_ADDR || address == TEMP1_MIN_LIMIT_ADDR)
     {
         const uint32_t max_address = (address == TEMP0_MIN_LIMIT_ADDR)
-                             ? TEMP0_MAX_LIMIT_ADDR
-                             : TEMP1_MAX_LIMIT_ADDR;
+                                     ? TEMP0_MAX_LIMIT_ADDR
+                                     : TEMP1_MAX_LIMIT_ADDR;
 
         const double max_temp = decode_temp(read_reg(max_address));
 
@@ -200,12 +184,12 @@ void Temperature_monitor::validate_write_reg(uint32_t address, uint32_t raw_valu
             );
         }
     }
-    // Validate MAX_LIMIT_WRITE
+    // Validate MAX Value <! set MIN Value
     else if (address == TEMP0_MAX_LIMIT_ADDR || address == TEMP1_MAX_LIMIT_ADDR)
     {
         const uint32_t min_address = (address == TEMP0_MAX_LIMIT_ADDR)
-                             ? TEMP0_MIN_LIMIT_ADDR
-                             : TEMP1_MIN_LIMIT_ADDR;
+                                     ? TEMP0_MIN_LIMIT_ADDR
+                                     : TEMP1_MIN_LIMIT_ADDR;
 
         const double min_temp = decode_temp(read_reg(min_address));
 

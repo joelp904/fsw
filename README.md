@@ -20,7 +20,6 @@ $ tree
 ├── docs
 │   ├── fsw.drawio
 │   └── fsw.png
-├── fsw
 ├── fsw.cpp
 ├── Makefile
 ├── README.md

@@ -46,9 +46,6 @@ void Thermal_sim::tick()
     }
     temperature_monitor_.sim_temp_update(THERMISTOR1, area1_temperature_);
 
-
-
-
     std::this_thread::sleep_for(
         std::chrono::milliseconds(350)
     );
